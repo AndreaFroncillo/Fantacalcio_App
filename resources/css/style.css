@@ -1,0 +1,26 @@
+/* Root */
+:root{
+    --blel: #1E90FF;
+    --gfoot: #2E8B57;
+    --countdown: #FF6347;
+}
+
+/* Header */
+.header-custom{
+    background-image: url(../img/headerfantacalcio.jpg);
+    background-position: center;
+    background-size: cover;
+    background-repeat: no-repeat;
+    height: 100vh;
+    width: 100%;
+}
+
+/* Navbar */
+.nav-custom{
+    background-color: var(--blel); 
+}
+
+/* Login */
+.height-custom{
+    min-height: 60vh;
+}
