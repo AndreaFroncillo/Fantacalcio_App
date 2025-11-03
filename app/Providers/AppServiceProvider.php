@@ -2,6 +2,8 @@
 
 namespace App\Providers;
 
+use Livewire\Livewire;
+use App\Http\Livewire\DraftLive;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -19,6 +21,6 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        //
+        Livewire::component('draft-live', DraftLive::class);
     }
 }

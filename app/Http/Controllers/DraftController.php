@@ -10,7 +10,14 @@ class DraftController extends Controller
 {
     public function showDraftPage(League $league)
     {
-        return view('draft.show', compact('league'));
+        $draft = $league->draftSessions()->where('active', true)->first();
+
+        if (!$draft) {
+            // Se non c'è una sessione attiva, puoi creare una bozza oppure mostrare un messaggio
+            return redirect()->route('leagues.show', $league)->with('error', 'Non c\'è un\'asta attiva.');
+        }
+
+        return view('draft.show', compact('league', 'draft'));
     }
 
     public function startDraft(Request $request, League $league)

@@ -25,7 +25,9 @@ class League extends Model
 
     public function users()
     {
-        return $this->belongsToMany(User::class)->withTimestamps();
+        return $this->belongsToMany(User::class)
+            ->withPivot(['credits', 'goalkeepers', 'defenders', 'midfielders', 'forwards', 'is_admin'])
+            ->withTimestamps();
     }
 
     protected static function boot()

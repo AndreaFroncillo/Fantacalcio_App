@@ -14,7 +14,18 @@
 
                 <p class="text-muted mt-2">Condividi questo codice con i tuoi amici per unirsi alla lega.</p>
 
+
                 <hr>
+
+                @if($league->draftSessions()->where('active', true)->exists())
+                <a href="{{ route('draft.show', $league) }}" class="mt-3 mb-3 btn btn-success">Vai all’Asta Live</a>
+                @else
+                <form action="{{ route('draft.start', $league) }}" method="POST">
+                    @csrf
+                    <button class="btn btn-primary">Avvia Asta</button>
+                </form>
+                @endif
+
 
                 <h5>Partecipanti ({{ $league->users->count() }}/{{ $league->max_players }})</h5>
                 <ul class="list-group">

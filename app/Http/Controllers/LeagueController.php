@@ -37,7 +37,10 @@ class LeagueController extends Controller
         ]);
 
         // aggiungi il creatore come membro admin
-        $league->users()->attach(Auth::id(), ['is_admin' => true]);
+        $league->users()->attach(Auth::id(), [
+            'is_admin' => true,
+            'credits' => 500, // crediti iniziali
+        ]);
 
         return redirect()->route('leagues.show', $league)->with('success', 'Lega creata con successo!');
     }
@@ -72,7 +75,7 @@ class LeagueController extends Controller
         }
 
         // Aggiunge l’utente alla lega
-        $league->users()->attach(Auth::id());
+        $league->users()->attach(Auth::id(), ['credits' => 500]);
 
         return redirect()->route('leagues.show', $league)
             ->with('success', 'Ti sei unito alla lega con successo!');

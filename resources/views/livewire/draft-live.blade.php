@@ -1,20 +1,24 @@
-<div class="card shadow-sm p-4">
+<div>
     @if($currentPlayer)
-    <h3 class="text-center mb-3">{{ $currentPlayer['name'] }} ({{ $currentPlayer['position'] }})</h3>
-    <p class="text-center">Crediti attuali: {{ $currentBid }}</p>
-    <p class="text-center">Tempo rimasto: {{ $timer }}s</p>
-    <p class="text-center">Ultimo rilancio di: {{ $highestBidder->name ?? 'Nessuno' }}</p>
+    <h3>Giocatore: {{ $currentPlayer['name'] }} ({{ $currentPlayer['position'] }})</h3>
 
-    <div class="d-flex justify-content-center gap-2">
-        <button wire:click="bid" class="btn btn-primary">Rilancia +1</button>
+    <p>Offerta più alta: {{ $highestBid }} crediti da
+        @if($highestBidder)
+        {{ \App\Models\User::find($highestBidder)->name }}
+        @else
+        Nessuno
+        @endif
+    </p>
+
+    <div class="mb-3">
+        <input type="number" wire:model="bidAmount" placeholder="Inserisci la tua offerta">
+        <button wire:click="placeBid({{ $bidAmount }})" class="btn btn-primary">Fai offerta</button>
+
+
     </div>
-    @else
-    <h3 class="text-center">Asta completata!</h3>
-    @endif
 
-    <script>
-        setInterval(() => {
-            Livewire.emit('refreshDraft');
-        }, 1000);
-    </script>
+    <button wire:click="confirmPlayer" class="btn btn-success">Assegna Giocatore</button>
+    @else
+    <h4>Asta terminata!</h4>
+    @endif
 </div>

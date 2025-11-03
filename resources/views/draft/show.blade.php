@@ -14,7 +14,8 @@
         @endif
 
         <div id="draft-area">
-            <livewire:draft-live :draft="$league->draftSessions()->where('active', true)->first()" />
+            <livewire:draft-live :league="$league" />
+
         </div>
     </div>
 </x-layout>
