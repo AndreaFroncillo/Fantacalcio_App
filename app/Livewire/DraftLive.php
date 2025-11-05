@@ -6,26 +6,34 @@ use Livewire\Component;
 use App\Models\Player;
 use App\Models\League;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Str;
 
 class DraftLive extends Component
 {
     public League $league;
     public $playersQueue = [];
-    public $allPlayers = [];
     public $currentPlayer;
     public $bids = [];
     public $highestBid = 0;
     public $highestBidder;
-    public $selectedRole = 'all'; // filtro per ruolo
+    public $selectedRole = 'all';
+    public $searchTerm = '';
     public $showModal = false;
     public $selectedPlayer = null;
-    public $rejectedPlayers = [];
-
 
     public function mount(League $league)
     {
-        // Laravel passa automaticamente il modello League
         $this->league = $league->load('users');
+        $this->loadPlayers();
+    }
+
+    public function updatedSelectedRole()
+    {
+        $this->loadPlayers();
+    }
+
+    public function updatedSearchTerm()
+    {
         $this->loadPlayers();
     }
 
@@ -37,42 +45,45 @@ class DraftLive extends Component
             $query->where('position', $this->selectedRole);
         }
 
-        $this->playersQueue = $query->get()->toArray();
-        $this->allPlayers = Player::where('drafted', false)->get();
+        if (!empty($this->searchTerm)) {
+            $term = Str::lower($this->normalize($this->searchTerm));
+            $query->whereRaw('LOWER(REPLACE(name, "à", "a")) LIKE ?', ["%{$term}%"]);
+        }
+
+        $this->playersQueue = $query->orderBy('name')->get()->toArray();
     }
 
-    public function updatedSelectedRole()
+    public function normalize($string)
     {
-        $this->loadPlayers();
+        // Rimuove accenti e converte in minuscolo
+        $string = iconv('UTF-8', 'ASCII//TRANSLIT', $string);
+        return preg_replace('/[^A-Za-z0-9 ]/', '', strtolower($string));
     }
 
-    public function selectPlayer($playerId)
+    public function openModal($playerId)
     {
         $this->selectedPlayer = Player::find($playerId);
         $this->showModal = true;
     }
 
-    public function confirmSelection()
+    public function callPlayer()
     {
-        if ($this->selectedPlayer) {
-            $this->currentPlayer = $this->selectedPlayer->toArray();
-            $this->bids = [];
-            $this->highestBid = 0;
-            $this->highestBidder = null;
-        }
+        if (!$this->selectedPlayer) return;
 
+        $this->currentPlayer = $this->selectedPlayer->toArray();
+        $this->bids = [];
+        $this->highestBid = 0;
+        $this->highestBidder = null;
+
+        // Rimuovi giocatore dalla lista
+        $this->selectedPlayer->drafted = true;
+        $this->selectedPlayer->save();
+
+        $this->loadPlayers();
+
+        // Chiudi modal e scrolla alla sezione offerte
         $this->showModal = false;
-    }
-
-    public function rejectPlayer()
-    {
-        $user = Auth::id();
-        if (!$user || !$this->currentPlayer) return;
-
-        $this->rejectedPlayers[$user][] = $this->currentPlayer['id'];
-        session()->flash('info', 'Hai rifiutato questo giocatore.');
-
-        $this->currentPlayer = null;
+        $this->dispatch('scrollToAuction');
     }
 
     public function placeBid($amount)
@@ -84,23 +95,14 @@ class DraftLive extends Component
             return;
         }
 
-        if (isset($this->rejectedPlayers[$user->id]) && in_array($this->currentPlayer['id'], $this->rejectedPlayers[$user->id])) {
-            session()->flash('error', 'Hai rifiutato questo giocatore.');
-            return;
-        }
-
-        $pivot = $user->leagues()
-            ->where('league_id', $this->league->id)
-            ->first()?->pivot;
+        $pivot = $user->leagues()->where('league_id', $this->league->id)->first()?->pivot;
 
         if (!$pivot) {
             session()->flash('error', 'Non partecipi a questa lega.');
             return;
         }
 
-        $credits = $pivot->credits;
-
-        if ($amount > $credits) {
+        if ($amount > $pivot->credits) {
             session()->flash('error', 'Non hai abbastanza crediti.');
             return;
         }
@@ -115,6 +117,14 @@ class DraftLive extends Component
         $this->bids[$user->id] = $amount;
 
         session()->flash('success', "Hai offerto {$amount} crediti!");
+    }
+
+    public function refusePlayer()
+    {
+        $this->currentPlayer = null;
+        $this->bids = [];
+        $this->highestBid = 0;
+        $this->highestBidder = null;
     }
 
     public function render()

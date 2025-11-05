@@ -1,25 +1,13 @@
-<div class="container py-4">
+<div class="container-fluid py-4">
     <div class="row">
-        {{-- COLONNA SINISTRA - elenco giocatori --}}
+        {{-- COLONNA SINISTRA: Lista giocatori --}}
         <div class="col-md-4 border-end">
-            <h5 class="fw-bold mb-3 text-center">👥 Giocatori Disponibili</h5>
-            <ul class="list-group">
-                @foreach ($allPlayers as $player)
-                    <li class="list-group-item d-flex justify-content-between align-items-center">
-                        <span>{{ $player->name }} <small class="text-muted">({{ $player->position }})</small></span>
-                        <button class="btn btn-sm btn-outline-primary" wire:click="selectPlayer({{ $player->id }})">
-                            Chiama
-                        </button>
-                    </li>
-                @endforeach
-            </ul>
-        </div>
+            <h4 class="text-center mb-3">📋 Lista Giocatori</h4>
 
-        {{-- COLONNA DESTRA - area asta --}}
-        <div class="col-md-8">
-            <div class="mb-4 text-center">
-                <label for="roleFilter" class="form-label fw-semibold">Filtra per ruolo:</label>
-                <select id="roleFilter" wire:model.live="selectedRole" class="form-select w-50 mx-auto">
+            {{-- Filtro Ruolo --}}
+            <div class="mb-3">
+                <label class="form-label fw-semibold">Filtra per ruolo:</label>
+                <select wire:model.live="selectedRole" class="form-select">
                     <option value="all">Tutti</option>
                     <option value="P">Portieri</option>
                     <option value="D">Difensori</option>
@@ -28,8 +16,36 @@
                 </select>
             </div>
 
-            <hr>
+            {{-- Ricerca Nome --}}
+            <div class="mb-3">
+                <input 
+                    type="text" 
+                    wire:model.live="searchTerm" 
+                    class="form-control" 
+                    placeholder="Cerca per nome..."
+                >
+            </div>
 
+            {{-- Lista giocatori --}}
+            <div class="list-group" style="max-height: 70vh; overflow-y: auto;">
+                @forelse ($playersQueue as $player)
+                    <div class="list-group-item d-flex justify-content-between align-items-center">
+                        <span>{{ $player['name'] }} ({{ $player['position'] }})</span>
+                        <button 
+                            class="btn btn-sm btn-outline-primary" 
+                            wire:click="openModal({{ $player['id'] }})"
+                        >
+                            Chiama
+                        </button>
+                    </div>
+                @empty
+                    <p class="text-muted text-center mt-3">Nessun giocatore disponibile</p>
+                @endforelse
+            </div>
+        </div>
+
+        {{-- COLONNA DESTRA: Asta live --}}
+        <div class="col-md-8" id="auction-section">
             @if ($currentPlayer)
                 <div class="text-center mb-4">
                     <h3 class="fw-bold">
@@ -37,8 +53,8 @@
                         <small class="text-muted">({{ $currentPlayer['position'] }})</small>
                     </h3>
 
-                    <p class="mt-3">
-                        Offerta più alta:
+                    <p>
+                        Offerta più alta: 
                         <strong>{{ $highestBid }}</strong> crediti
                         @if ($highestBidder)
                             da {{ \App\Models\User::find($highestBidder)->name }}
@@ -48,46 +64,66 @@
                     </p>
                 </div>
 
+                {{-- Sezione Offerta --}}
                 <div class="text-center mb-3">
-                    <input type="number" min="1" wire:model.live="bidAmount" placeholder="Inserisci la tua offerta"
-                        class="form-control w-25 d-inline-block text-center">
-                    <button wire:click="placeBid({{ $bidAmount ?? 1 }})" class="btn btn-primary mx-2">
+                    <input 
+                        type="number" 
+                        min="1"
+                        wire:model.live="bidAmount" 
+                        placeholder="Inserisci la tua offerta" 
+                        class="form-control w-25 d-inline-block text-center"
+                    >
+
+                    <button 
+                        wire:click="placeBid({{ $bidAmount ?? 1 }})" 
+                        class="btn btn-primary mx-2"
+                    >
                         💰 Fai offerta
                     </button>
-                    <button wire:click="rejectPlayer" class="btn btn-danger">
+
+                    <button 
+                        wire:click="refusePlayer" 
+                        class="btn btn-danger"
+                    >
                         ❌ Rifiuta Giocatore
                     </button>
                 </div>
             @else
-                <h5 class="text-center text-muted mt-5">Nessun giocatore selezionato</h5>
-            @endif
-
-            {{-- Messaggi flash --}}
-            @if (session()->has('success'))
-                <div class="alert alert-success text-center mt-3">{{ session('success') }}</div>
-            @elseif (session()->has('error'))
-                <div class="alert alert-danger text-center mt-3">{{ session('error') }}</div>
-            @elseif (session()->has('info'))
-                <div class="alert alert-info text-center mt-3">{{ session('info') }}</div>
+                <h4 class="text-center text-success mt-5">🏁 Nessun giocatore in corso.</h4>
             @endif
         </div>
     </div>
 
-    {{-- MODAL --}}
+    {{-- Modal per chiamare giocatore --}}
     @if ($showModal && $selectedPlayer)
         <div class="modal fade show d-block" tabindex="-1" style="background: rgba(0,0,0,0.5);">
             <div class="modal-dialog modal-dialog-centered">
-                <div class="modal-content text-center p-4">
-                    <h4>⚽ Chiama Giocatore</h4>
-                    <p class="mt-3">
-                        Vuoi chiamare <strong>{{ $selectedPlayer->name }}</strong> ({{ $selectedPlayer->position }}) all'asta?
-                    </p>
-                    <div class="mt-4">
-                        <button class="btn btn-success mx-2" wire:click="confirmSelection">✅ Chiama</button>
-                        <button class="btn btn-secondary mx-2" wire:click="$set('showModal', false)">Annulla</button>
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Chiama Giocatore</h5>
+                        <button type="button" class="btn-close" wire:click="$set('showModal', false)"></button>
+                    </div>
+                    <div class="modal-body text-center">
+                        <p>Vuoi chiamare <strong>{{ $selectedPlayer->name }}</strong> ({{ $selectedPlayer->position }})?</p>
+                    </div>
+                    <div class="modal-footer justify-content-center">
+                        <button class="btn btn-secondary" wire:click="$set('showModal', false)">Annulla</button>
+                        <button class="btn btn-success" wire:click="callPlayer">Chiama</button>
                     </div>
                 </div>
             </div>
         </div>
     @endif
+
+    {{-- Script scroll automatico --}}
+    <script>
+        document.addEventListener('livewire:load', () => {
+            Livewire.on('scrollToAuction', () => {
+                const section = document.getElementById('auction-section');
+                if (section) {
+                    section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+            });
+        });
+    </script>
 </div>
