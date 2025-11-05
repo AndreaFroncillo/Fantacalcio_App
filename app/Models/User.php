@@ -7,6 +7,10 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
+/**
+ * @property \Illuminate\Database\Eloquent\Collection|\App\Models\League[] $leagues
+ */
+
 class User extends Authenticatable
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
@@ -46,10 +50,6 @@ class User extends Authenticatable
         ];
     }
 
-    public function leagues()
-    {
-        return $this->belongsToMany(League::class)->withTimestamps();
-    }
 
     public function ownedLeagues()
     {
@@ -65,6 +65,13 @@ class User extends Authenticatable
     {
         return $this->belongsToMany(DraftSession::class)
             ->withPivot('remaining_credits')
+            ->withTimestamps();
+    }
+
+    public function leagues()
+    {
+        return $this->belongsToMany(League::class)
+            ->withPivot(['is_admin', 'credits', 'goalkeepers', 'defenders', 'midfielders', 'forwards'])
             ->withTimestamps();
     }
 }

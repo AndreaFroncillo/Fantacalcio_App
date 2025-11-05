@@ -3,7 +3,7 @@
 namespace App\Providers;
 
 use Livewire\Livewire;
-use App\Http\Livewire\DraftLive;
+use App\Livewire\DraftLive;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider

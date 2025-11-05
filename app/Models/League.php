@@ -6,6 +6,10 @@ use Illuminate\Support\Str;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 
+/**
+ * @property \Illuminate\Database\Eloquent\Collection|\App\Models\User[] $users
+ */
+
 class League extends Model
 {
     use HasFactory;
@@ -26,7 +30,7 @@ class League extends Model
     public function users()
     {
         return $this->belongsToMany(User::class)
-            ->withPivot(['credits', 'goalkeepers', 'defenders', 'midfielders', 'forwards', 'is_admin'])
+            ->withPivot(['is_admin', 'credits', 'goalkeepers', 'defenders', 'midfielders', 'forwards'])
             ->withTimestamps();
     }
 
