@@ -20,6 +20,8 @@ class DraftLive extends Component
     public $searchTerm = '';
     public $showModal = false;
     public $selectedPlayer = null;
+    public $totalPlayers = 0;
+    public $remainingPlayers = 0;
 
     public function mount(League $league)
     {
@@ -39,6 +41,7 @@ class DraftLive extends Component
 
     public function loadPlayers()
     {
+        $this->totalPlayers = Player::count(); // tutti i giocatori
         $query = Player::where('drafted', false);
 
         if ($this->selectedRole !== 'all') {
@@ -50,7 +53,9 @@ class DraftLive extends Component
             $query->whereRaw('LOWER(REPLACE(name, "à", "a")) LIKE ?', ["%{$term}%"]);
         }
 
-        $this->playersQueue = $query->orderBy('name')->get()->toArray();
+        $players = $query->orderBy('name')->get();
+        $this->playersQueue = $players->toArray();
+        $this->remainingPlayers = $players->count(); // rimasti
     }
 
     public function normalize($string)
